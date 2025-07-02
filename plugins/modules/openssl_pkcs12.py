@@ -802,13 +802,6 @@ def main() -> t.NoReturn:
 
     pkcs12 = select_backend(module)
 
-    base_dir = os.path.dirname(module.params["path"]) or "."
-    if not os.path.isdir(base_dir):
-        module.fail_json(
-            name=base_dir,
-            msg=f"The directory '{base_dir}' does not exist or the path is not a directory",
-        )
-
     try:
         changed = False
 
