@@ -817,7 +817,8 @@ def main() -> t.NoReturn:
                         module.fail_json(msg="Friendly_name is required")
                     pkcs12_content = pkcs12.generate_bytes(module)
                     pkcs12.write(module, pkcs12_content, 0o600)
-                    changed = True
+                    if pkcs12.write_content or pkcs12.backup:
+                        changed = True
                 else:
                     pkey, cert, other_certs, _friendly_name = pkcs12.parse()
                     dump_content = "".join(
@@ -828,7 +829,8 @@ def main() -> t.NoReturn:
                         ]
                     )
                     pkcs12.write(module, to_bytes(dump_content))
-                    changed = True
+                    if pkcs12.write_content or pkcs12.backup:
+                        changed = True
 
             file_args = module.load_file_common_arguments(module.params)
             if file_args.get("path") is not None:
