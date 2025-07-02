@@ -417,7 +417,7 @@ class OpenSSLObject(metaclass=abc.ABCMeta):
         self.path = path
         self.state = state
         self.force = force
-        self.name = os.path.basename(path)
+        self.name = os.path.basename(path) if path is not None else None
         self.changed = False
         self.check_mode = check_mode
 
@@ -425,7 +425,7 @@ class OpenSSLObject(metaclass=abc.ABCMeta):
         """Ensure the resource is in its desired state."""
 
         def _check_state() -> bool:
-            return os.path.exists(self.path)
+            return self.path is not None and os.path.exists(self.path)
 
         def _check_perms(module: AnsibleModule) -> bool:
             file_args = module.load_file_common_arguments(module.params)
@@ -449,13 +449,14 @@ class OpenSSLObject(metaclass=abc.ABCMeta):
     def remove(self, module: AnsibleModule) -> None:
         """Remove the resource from the filesystem."""
         if self.check_mode:
-            if os.path.exists(self.path):
+            if self.path is not None and os.path.exists(self.path):
                 self.changed = True
             return
 
         try:
-            os.remove(self.path)
-            self.changed = True
+            if self.path is not None:
+                os.remove(self.path)
+                self.changed = True
         except OSError as exc:
             if exc.errno != errno.ENOENT:
                 raise OpenSSLObjectError(exc) from exc
