@@ -831,12 +831,12 @@ def main() -> t.NoReturn:
                     changed = True
 
             file_args = module.load_file_common_arguments(module.params)
-            if "path" in file_args:
+            if file_args.get("path") is not None:
                 if module.check_file_absent_if_check_mode(file_args["path"]):
                     changed = True
                 elif module.set_fs_attributes_if_different(file_args, changed):
                     changed = True
-        elif "path" in module.params:
+        elif module.params.get("path") is not None:
             if module.check_mode:
                 result = pkcs12.dump()
                 result["changed"] = os.path.exists(module.params["path"])
@@ -848,7 +848,7 @@ def main() -> t.NoReturn:
 
         result = pkcs12.dump()
         result["changed"] = changed
-        if "path" in module.params and os.path.exists(module.params["path"]):
+        if module.params.get("path") is not None and os.path.exists(module.params["path"]):
             file_mode = f"{stat.S_IMODE(os.stat(module.params['path']).st_mode):04o}"
             result["mode"] = file_mode
 
