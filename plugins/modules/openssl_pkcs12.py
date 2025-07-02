@@ -159,6 +159,12 @@ options:
     type: bool
     default: false
     version_added: "1.0.0"
+  write_content:
+    description:
+      - If set to v(flase), will prevent writing the content to the file specified by the RV(path) parameter, as well as specifying the RV(path) parameter as not required
+    type: bool
+    default: true
+    version_added: "3.0.0"
   select_crypto_backend:
     description:
       - Determines which crypto backend to use.
@@ -243,6 +249,14 @@ EXAMPLES = r"""
     src: /opt/certs/ansible.p12
     path: /opt/certs/ansible.pem
     state: present
+
+- name: Parse PKCS#12 file into a variable for further processing
+  community.crypto.openssl_pkcs12:
+    action: parse
+    src: /opt/certs/ansible.p12
+    write_content: false
+    return_content: true
+  register: pkcs12_parse_result
 
 - name: Remove PKCS#12 file
   community.crypto.openssl_pkcs12:
@@ -398,6 +412,7 @@ class Pkcs(OpenSSLObject):
         privatekey_content: str | None = module.params["privatekey_content"]
         self.pkcs12_bytes: bytes | None = None
         self.return_content: bool = module.params["return_content"]
+        self.write_content: bool = module.params["write_content"]
         self.src: str | None = module.params["src"]
 
         if module.params["mode"] is None:
@@ -707,7 +722,8 @@ class Pkcs(OpenSSLObject):
         """Write the PKCS#12 file."""
         if self.backup:
             self.backup_file = module.backup_local(self.path)
-        write_file(module=module, content=content, default_mode=mode)
+        if self.write_content:
+          write_file(module=module, content=content, default_mode=mode)
         if self.return_content:
             self.pkcs12_bytes = content
 
@@ -745,7 +761,7 @@ def main() -> t.NoReturn:
             "removed_from_collection": "community.crypto",
         },
         "passphrase": {"type": "str", "no_log": True},
-        "path": {"type": "path", "required": True},
+        "path": {"type": "path", "required": False},
         "privatekey_passphrase": {"type": "str", "no_log": True},
         "privatekey_path": {"type": "path"},
         "privatekey_content": {"type": "str", "no_log": True},
@@ -757,6 +773,7 @@ def main() -> t.NoReturn:
         "src": {"type": "path"},
         "backup": {"type": "bool", "default": False},
         "return_content": {"type": "bool", "default": False},
+        "write_content": {"type": "bool", "default": True},
         "select_crypto_backend": {
             "type": "str",
             "default": "auto",
@@ -766,6 +783,7 @@ def main() -> t.NoReturn:
 
     required_if = [
         ["action", "parse", ["src"]],
+        ["write_content", True, ["path"]],
     ]
 
     mutually_exclusive = [
